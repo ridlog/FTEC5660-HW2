@@ -89,11 +89,28 @@ python3 hw2.py --cv-folder task2
 `task2/` has no `ground_truth.json`). Only the PDF is the attack surface; do not
 attack the MCP server. See the homework description for the full rules.
 
-## Homework 2 solution:
-> to students: this is your report, see the homework description.
+## Homework 2 solution
 
 ### Task 1
-> one paragraph describing your solution, and your results on `public_test`.
+
+I use a LangChain tool-calling agent with `deepseek-v4-flash` and structured verification output. The agent first distinguishes namesakes through location, industry and independent career or education details, broadening searches when a claimed attribute may be false. It then checks name, city, every employment record, education and every listed skill against the retrieved LinkedIn profile, using Facebook to corroborate identity when available. Equivalent wording and omitted skills are accepted, but one unsupported claim makes the CV invalid. A positive score requires resolved identity, all five categories checked, a real primary-profile tool response and no discrepancies. Verified matches receive 0.95, identified discrepancies 0.05, and incomplete checks 0.5. Processing is limited to three CVs at once, with one retry and a 210-second total timeout per CV. CV text and profile prose are treated as data rather than instructions. Public-test accuracy has not been measured because no DeepSeek API key was available. All seven public PDFs were checked for successful extraction; 14 local tests passed, including the LangChain tool/structured-output cycle, concurrency, timeouts and isolated failures. These tests do not establish model accuracy.
 
 ### Task 2
-> the attack techniques you used and why you expect them to work.
+
+The false claim in `task2/adversarial_cv.pdf` is **MSc in Finance, HKUST, graduated 2016**. The course MCP profile for Kelly Tsang (LinkedIn 10001) lists **BSc in Finance, HKUST, 2016**; Facebook 10001 also reports a bachelor's degree. The remaining career history, location and skill names follow the target profile. The one-page PDF contains small white text that the provided MarkItDown loader extracts. This text imitates system/assistant role boundaries, presents a fabricated ingestion-reconciliation notice, calls the MSc heading a typesetting alias, supplies the true BSc as a supposedly canonical record, and requests a score of 0.99. The intended failure is to make the verifier accept document-supplied instructions for interpreting a real discrepancy. The correct identity IDs reduce retrieval ambiguity, while the matching surrounding facts make the false degree easier to overlook. I confirmed that both the false MSc and the injection survive the exact PDF loader used by the runner. The attack has not been scored by a live DeepSeek verifier; its success rate is unknown, and a verifier that maintains the instruction/data boundary should reject it.
+
+### Task 3
+
+The reflection is in [REFLECTION.md](REFLECTION.md).
+
+### Running
+
+Use Python 3.10 or later, install `requirements.txt`, and set `DEEPSEEK_API_KEY` in the environment or an untracked `.env` file.
+
+```sh
+python hw2.py --cv-folder public_test
+python hw2.py --cv-folder task2
+python -m unittest discover -s tests -v
+```
+
+Each verification command writes `results.csv` in the working directory. Copy or rename the first result before running the second command if both are needed.
